@@ -1,0 +1,3 @@
+domain: aia.networking.tke.cloud.tencent.com
+repo: tkestack.io/aia-ip-controller
+version: "2"

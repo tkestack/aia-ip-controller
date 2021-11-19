@@ -1,0 +1,19 @@
+controller:
+  resourceLockName: tke-aia-ip-controller
+region: # use your wo
+  shortName: xxx # example: hk
+  longName: xx-xxxxx # example: ap-hongkong
+credential: # will be override if related env set, if you want to set credential para in env, just remove this section
+  clusterID: xxxxx   # env key AIA_CLUSTER_ID
+  appID: xxxxx       # env key AIA_APP_ID
+  secretID: xxxx     # env key AIA_SECRET_ID
+  secretKey: xxxxx   # env key AIA_SECRET_KEY
+aia:
+  tags:
+    k1: v1
+    k2: v2
+  bandwidth: 100
+  anycastZone: ANYCAST_ZONE_OVERSEAS # ANYCAST_ZONE_OVERSEAS or ANYCAST_ZONE_GLOBAL
+node:
+  labels:
+    tke.cloud.tencent.com/need-aia-ip: 'true'
