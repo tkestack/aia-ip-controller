@@ -55,10 +55,13 @@ Let's take a look at a specific use case.
 
 ![aia-controller-ca-mis-scheduled-pod](docs/images/aia-controller-ca-mis-scheduled-pod.png)
 
-As shown in the sequence diagram above, when the cluster autoscaler is used on Tencent Cloud, and the node pool template is labeled with `tke.cloud.tencent.com/need-aia-ip: 'true'` but no taint is configured, cluster-autoscaler will increase the size of the Kubernetes cluster and label the new nodes. 
+As shown in the sequence diagram above, when the Cluster Autoscaler(CA) is used on Tencent Cloud, and the node pool template is labeled with `tke.cloud.tencent.com/need-aia-ip: 'true'` but no taint is configured, cluster-autoscaler will increase the size of the Kubernetes cluster and label the new nodes. 
 Nevertheless, as mentioned earlier, Aia-ip-controller and kube-scheduler are independent of each other, and there is no synchronization mechanism. Therefore, before Aia-ip-controller taint the nodes, kube-scheduler may schedule some pods to those that do not have aia ip. 
 
 In other words, step 16 in the figure above may occur earlier than step 10.
+
+So it is recommended to set taint `tke.cloud.tencent.com/no-aia-ip": "true"` in the CA node pool template so that pods will not be scheduled on those newly added nodes. 
+The CA on TKE is optimized for this special scenario. It can identify the taint `tke.cloud.tencent.com/no-aia-ip": "true"` and adjust the size of cluster appropriately.
 
 ### Reverse Reconcile
 Aia-ip-controller will watch the node deleted event and trigger the unbinding and release of the aia ip associated with the node. But if the Aia-ip-controller is unavailable when the node's delete event occurs, after it recovers, it will no longer be able to perceive the previous node's delete event to process aia ip. Therefore, we may need a reverse reconciliation logic to process the aia ip associated with these deleted nodes.  
