@@ -34,6 +34,7 @@ type AiaConfig struct {
 	Tags        map[string]string `yaml:"tags"`
 	Bandwidth   int64             `yaml:"bandwidth"`
 	AnycastZone string            `yaml:"anycastZone"`
+	AddressType string            `yaml:"addressType"`
 }
 
 type NodeConfig struct {

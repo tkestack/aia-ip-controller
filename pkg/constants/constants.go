@@ -3,9 +3,10 @@ package constants
 const (
 	TkeNodeInsIdAnnoKey = "cloud.tencent.com/node-instance-id"
 
-	EipTypeWanIp   = "WanIP"
-	EipTypeCommon  = "EIP"
-	EipTypeAnyCast = "AnycastEIP"
+	EipTypeWanIp          = "WanIP"
+	EipTypeCommon         = "EIP"
+	EipTypeAnyCast        = "AnycastEIP"
+	EipTypeHighQualityEIP = "HighQualityEIP"
 
 	// event reasons
 	FailedAllocateAnycastIp  = "FailedAllocateAnycastIp"

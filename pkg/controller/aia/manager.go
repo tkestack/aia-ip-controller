@@ -24,7 +24,9 @@ import (
 	"tkestack.io/aia-ip-controller/pkg/constants"
 )
 
+// Manger is not only take care of aia ip staff, but also HighQualityEIP
 type Manger interface {
+	ProcessingEipType() string
 	IsAiaNode(labels map[string]string, node *corev1.Node) bool
 	IsCvmNeedToAllocateAnyCastIp(node *corev1.Node) (bool, error)
 	GetAnycastIpByTags(nodeName string) (bool, string, error)
@@ -36,8 +38,9 @@ type Manger interface {
 }
 
 const (
-	tagDuplicateErrCode  = "TagDuplicate"
-	tagNotExistedErrCode = "InvalidTag.NotExisted"
+	tagDuplicateErrCode     = "TagDuplicate"
+	tagNotExistedErrCode    = "InvalidTag.NotExisted"
+	newTagNotExistedErrCode = "InvalidParameterValue.TagNotExisted"
 )
 
 type MangerImp struct {
@@ -49,6 +52,7 @@ type MangerImp struct {
 	clusterUuid      string
 	bandwidth        int64
 	anycastZone      string
+	addressType      string
 	k8sClient        client.Client
 	k8sNoCacheClient clientset.Interface
 }
@@ -62,6 +66,7 @@ func NewAiaManager(
 	clusterId string,
 	bandwidth int64,
 	anycastZone string,
+	addressType string,
 ) (Manger, error) {
 
 	config, err := rest.InClusterConfig()
@@ -82,12 +87,21 @@ func NewAiaManager(
 		bandwidth:        bandwidth,
 		k8sClient:        k8sClient,
 		anycastZone:      anycastZone,
+		addressType:      addressType,
 		k8sNoCacheClient: kubeClient,
 	}, nil
 }
 
-func (m *MangerImp) IsAiaNode(labels map[string]string, node *corev1.Node) bool {
+// ProcessingEipType return eip type that this controller processing, default is AnycastEIP
+func (m *MangerImp) ProcessingEipType() string {
+	if m.addressType != "" {
+		return m.addressType
+	}
+	return constants.EipTypeAnyCast
+}
 
+// IsAiaNode will check if a node has labels that user specify in config file
+func (m *MangerImp) IsAiaNode(labels map[string]string, node *corev1.Node) bool {
 	cvmInsId := node.Labels[constants.TkeNodeInsIdAnnoKey]
 	if cvmInsId == "" {
 		klog.V(4).Infof("node %s has no ins id in label yet, not going to process")
@@ -96,7 +110,7 @@ func (m *MangerImp) IsAiaNode(labels map[string]string, node *corev1.Node) bool 
 
 	for k, v := range labels {
 		if node.Labels[k] != v {
-			klog.V(2).Infof("node %s has no aip label(%s:%s), just skip it", node.Name, k, v)
+			klog.V(2).Infof("node %s has no aip or eip label(%s:%s), just skip it", node.Name, k, v)
 			return false
 		}
 	}
@@ -147,7 +161,7 @@ func (m *MangerImp) AllocateAnycastIp(node *corev1.Node, additionalTags map[stri
 	// 2. call vpc to create a new one
 	allocateReq := vpc.NewAllocateAddressesRequest()
 	allocateReq.AddressName = common.StringPtr(fmt.Sprintf("%s-aia", m.clusterId))
-	allocateReq.AddressType = common.StringPtr(constants.EipTypeAnyCast)
+	allocateReq.AddressType = common.StringPtr(m.ProcessingEipType())
 	if m.anycastZone != "" {
 		allocateReq.AnycastZone = common.StringPtr(m.anycastZone)
 	}
@@ -177,7 +191,7 @@ func (m *MangerImp) AllocateAnycastIp(node *corev1.Node, additionalTags map[stri
 		klog.Warningf("allocate addresses for node %s failed, err: %v.", node.Name, err)
 		// try to create tag key and value, because eip api do not support auto create tag.
 		// and the stupid tag create api is cannot reentry, so we have to create tag here...
-		if !strings.Contains(err.Error(), tagNotExistedErrCode) {
+		if !strings.Contains(err.Error(), tagNotExistedErrCode) && !strings.Contains(err.Error(), newTagNotExistedErrCode) {
 			eventStr := strings.Split(err.Error(), ", RequestId")[0]
 			m.eventRecorder.Eventf(node, corev1.EventTypeWarning, constants.FailedAllocateAnycastIp, fmt.Sprintf("Failed to allocate Anycast ip (will retry): %s", eventStr))
 			// event if error not container tag not exist code, we will still try to create tag, in case vpc api change error code
@@ -348,7 +362,7 @@ func (m *MangerImp) IsCvmNeedToAllocateAnyCastIp(node *corev1.Node) (bool, error
 		},
 		{
 			Name:   common.StringPtr("address-type"),
-			Values: common.StringPtrs([]string{"WanIP", "EIP", "AnycastEIP"}),
+			Values: common.StringPtrs([]string{constants.EipTypeCommon, constants.EipTypeCommon, constants.EipTypeAnyCast, constants.EipTypeHighQualityEIP}),
 		},
 	}
 	descCvmAddrResp, err := m.vpcClient.DescribeAddresses(descCvmAddrReq)
@@ -365,6 +379,11 @@ func (m *MangerImp) IsCvmNeedToAllocateAnyCastIp(node *corev1.Node) (bool, error
 		if eipInfo.AddressType == nil {
 			continue
 		}
+		vpcReqId := "nil"
+		if descCvmAddrResp.Response.RequestId != nil {
+			vpcReqId = *descCvmAddrResp.Response.RequestId
+		}
+		klog.V(3).Infof("found node %s has eip type: %s, vpc requestId: %s, current processing type: %s", node.Name, *eipInfo.AddressType, vpcReqId, m.ProcessingEipType())
 		switch *eipInfo.AddressType {
 		case constants.EipTypeWanIp:
 			klog.Infof("node %s already has wan ip %s,%s, cannot associate anycast ip", node.Name, *eipInfo.AddressId, *eipInfo.AddressIp)
@@ -374,16 +393,26 @@ func (m *MangerImp) IsCvmNeedToAllocateAnyCastIp(node *corev1.Node) (bool, error
 			klog.Infof("node %s already has EIP %s,%s, cannot associate anycast ip", node.Name, *eipInfo.AddressId, *eipInfo.AddressIp)
 			m.eventRecorder.Eventf(node, corev1.EventTypeWarning, constants.FailedAllocateAnycastIp, "node %s has EIP %s/%s, cannot associate AnycastIp", node.Name, *eipInfo.AddressId, *eipInfo.AddressIp)
 			return false, m.taintAiaToNodeIfNecessary(node)
-		case constants.EipTypeAnyCast:
-			if eipInfo.AddressId == nil || eipInfo.AddressIp == nil {
-				return false, fmt.Errorf("anycast ip of cvm %s has no id or ip info", cvmInsId)
+		case constants.EipTypeAnyCast, constants.EipTypeHighQualityEIP:
+			if *eipInfo.AddressType == m.ProcessingEipType() {
+				if eipInfo.AddressId == nil || eipInfo.AddressIp == nil {
+					return false, fmt.Errorf("anycast ip of cvm %s has no id or ip info", cvmInsId)
+				}
+				if err := m.removeNoAnycastTaintAndAddAnnotation(node, *eipInfo.AddressId, *eipInfo.AddressIp); err != nil {
+					m.eventRecorder.Eventf(node, corev1.EventTypeWarning, constants.FailedUntaintNode, "failed to untaint node %s, will retry", node.Name)
+					return false, err
+				}
+				klog.Infof("node %s already has anycast ip %s-%s, and remove taint success, just skip it", node.Name, *eipInfo.AddressId, *eipInfo.AddressIp)
+				return false, nil
+			} else {
+				// upload warning events
+				klog.Warningf("node %s already has EIP %s,%s, type is %s, cannot allocate %s", node.Name, *eipInfo.AddressId, *eipInfo.AddressIp, *eipInfo.AddressType, m.ProcessingEipType())
+				m.eventRecorder.Eventf(node, corev1.EventTypeWarning, constants.FailedAllocateAnycastIp, "node %s has EIP %s/%s, type %s, cannot allocate %s",
+					node.Name, *eipInfo.AddressId, *eipInfo.AddressIp, *eipInfo.AddressType, m.ProcessingEipType())
+				return false, m.taintAiaToNodeIfNecessary(node)
 			}
-			if err := m.removeNoAnycastTaintAndAddAnnotation(node, *eipInfo.AddressId, *eipInfo.AddressIp); err != nil {
-				m.eventRecorder.Eventf(node, corev1.EventTypeWarning, constants.FailedUntaintNode, "failed to untaint node %s, will retry", node.Name)
-				return false, err
-			}
-			klog.Infof("node %s already has anycast ip %s-%s, and remove taint success, just skip it", node.Name, *eipInfo.AddressId, *eipInfo.AddressIp)
-			return false, nil
+		default:
+			klog.Warningf("found an unknown eip type for cvm %s: %s", cvmInsId, *eipInfo.AddressType)
 		}
 	}
 

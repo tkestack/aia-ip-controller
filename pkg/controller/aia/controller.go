@@ -59,7 +59,9 @@ func NewReconcile(k8sClient client.Client, eventRecorder record.EventRecorder, c
 		return nil, cErr
 	}
 
-	aiaManager, aErr := NewAiaManager(k8sClient, cvmClient, vpcClient, tagClient, eventRecorder, controllerConfig.ConfigFileConf.Credential.ClusterID, controllerConfig.ConfigFileConf.Aia.Bandwidth, controllerConfig.ConfigFileConf.Aia.AnycastZone)
+	aiaManager, aErr := NewAiaManager(k8sClient, cvmClient, vpcClient, tagClient, eventRecorder,
+		controllerConfig.ConfigFileConf.Credential.ClusterID, controllerConfig.ConfigFileConf.Aia.Bandwidth,
+		controllerConfig.ConfigFileConf.Aia.AnycastZone, controllerConfig.ConfigFileConf.Aia.AddressType)
 	if aErr != nil {
 		klog.Errorf("NewAiaManager failed, err: %v", aErr)
 		return nil, aErr
@@ -99,7 +101,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	err := r.k8sClient.Get(ctx, req.NamespacedName, node)
 	if errors.IsNotFound(err) {
 		log.Error(nil, fmt.Sprintf("Could not find node %s", req.Name))
-		// call tag api to check if any anycast ip related with the deleted node
+		// call tag api to check if any anycast ip or eip related with the deleted node
 		found, legacyAnycastId, err := r.AiaManger.GetAnycastIpByTags(req.Name)
 		if err != nil {
 			klog.Errorf("GetAnycastIpByTags of node %s failed, err: %v", req.Name, err)
