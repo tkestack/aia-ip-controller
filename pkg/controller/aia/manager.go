@@ -362,7 +362,7 @@ func (m *MangerImp) IsCvmNeedToAllocateAnyCastIp(node *corev1.Node) (bool, error
 		},
 		{
 			Name:   common.StringPtr("address-type"),
-			Values: common.StringPtrs([]string{constants.EipTypeCommon, constants.EipTypeCommon, constants.EipTypeAnyCast, constants.EipTypeHighQualityEIP}),
+			Values: common.StringPtrs([]string{constants.EipTypeCommon, constants.EipTypeWanIp, constants.EipTypeAnyCast, constants.EipTypeHighQualityEIP}),
 		},
 	}
 	descCvmAddrResp, err := m.vpcClient.DescribeAddresses(descCvmAddrReq)
@@ -374,6 +374,9 @@ func (m *MangerImp) IsCvmNeedToAllocateAnyCastIp(node *corev1.Node) (bool, error
 		klog.Errorf("vpc/DescribeAddresses of cvm %s has no response", cvmInsId)
 		return false, fmt.Errorf("vpc DescribeAddresses has no response")
 	}
+
+	descCvmAddrRespB, _ := json.Marshal(descCvmAddrResp)
+	klog.V(4).Infof("describe address of cvm %s got response: %s", cvmInsId, string(descCvmAddrRespB))
 
 	for _, eipInfo := range descCvmAddrResp.Response.AddressSet {
 		if eipInfo.AddressType == nil {
@@ -409,7 +412,7 @@ func (m *MangerImp) IsCvmNeedToAllocateAnyCastIp(node *corev1.Node) (bool, error
 				klog.Warningf("node %s already has EIP %s,%s, type is %s, cannot allocate %s", node.Name, *eipInfo.AddressId, *eipInfo.AddressIp, *eipInfo.AddressType, m.ProcessingEipType())
 				m.eventRecorder.Eventf(node, corev1.EventTypeWarning, constants.FailedAllocateAnycastIp, "node %s has EIP %s/%s, type %s, cannot allocate %s",
 					node.Name, *eipInfo.AddressId, *eipInfo.AddressIp, *eipInfo.AddressType, m.ProcessingEipType())
-				return false, m.taintAiaToNodeIfNecessary(node)
+				return false, nil
 			}
 		default:
 			klog.Warningf("found an unknown eip type for cvm %s: %s", cvmInsId, *eipInfo.AddressType)
