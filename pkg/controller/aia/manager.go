@@ -162,7 +162,7 @@ func (m *MangerImp) AllocateAnycastIp(node *corev1.Node, additionalTags map[stri
 	allocateReq := vpc.NewAllocateAddressesRequest()
 	allocateReq.AddressName = common.StringPtr(fmt.Sprintf("%s-aia", m.clusterId))
 	allocateReq.AddressType = common.StringPtr(m.ProcessingEipType())
-	if m.anycastZone != "" {
+	if m.ProcessingEipType() == constants.EipTypeAnyCast && m.anycastZone != "" {
 		allocateReq.AnycastZone = common.StringPtr(m.anycastZone)
 	}
 	if m.bandwidth > 0 {
