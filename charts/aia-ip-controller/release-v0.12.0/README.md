@@ -51,8 +51,8 @@ config:
 Here we will deploy the controller in `kube-system` namespace, and the helm release name is `aia-ip-controller`, you can also use other namespace and name：
 
 ```sh
-wget https://tke-release-1251707795.cos.ap-guangzhou.myqcloud.com/charts/aia-ip-controller-0.11.0.tgz
-helm install aia-ip-controller -n kube-system -f values.yaml aia-ip-controller-0.11.0.tgz
+wget https://github.com/tkestack/aia-ip-controller/releases/download/v0.12.0/aia-ip-controller-0.12.0.tgz
+helm install aia-ip-controller -n kube-system -f values.yaml aia-ip-controller-0.12.0.tgz
 ```
 
 After `aia-ip-controller` status is running, add node, do not bind public ip for this node, with label `tke.cloud.tencent.com/need-aia-ip: true`, this node will be bound with `aia` automatically。
