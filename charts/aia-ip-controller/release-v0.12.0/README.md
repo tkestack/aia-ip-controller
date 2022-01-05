@@ -76,7 +76,8 @@ config:
       k1: v1
       k2: v2
     bandwidth: 100 # Bandwidth(Mbps) of aia
-    anycastZone: ANYCAST_ZONE_OVERSEAS # ANYCAST_ZONE_OVERSEAS or ANYCAST_ZONE_GLOBAL 
+    anycastZone: ANYCAST_ZONE_OVERSEAS # Deprecated 
+    addressType: AnycastEIP # AnycastEIP, EIP or HighQualityEIP
   node:
     labels: # the node with these labels will be bound aia ip
       tke.cloud.tencent.com/need-aia-ip: 'true'
