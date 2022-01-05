@@ -19,7 +19,8 @@ Bind [anycast ip](https://config.tencent.com/product/aia) automatically when add
 | `config.region.longName`           | Tencent cloud region long name                  | `ap-hongkong`                    |
 | `config.aia.tags`                  | Extension label of aia                        | ""		                  |
 | `config.aia.bandwidth`             | Bandwidth(Mbps) of aia                        | `100`                          |
-| `config.aia.anycastZone`           | Zone of anycast resource                       | `ANYCAST_ZONE_OVERSEAS` (`ANYCAST_ZONE_GLOBAL`: publish in global，need add white list to enable global acceleration，`ANYCAST_ZONE_OVERSEAS`: publish in overseas)|
+| `config.aia.anycastZone`           | **Deprecated**. Zone of anycast resource                       | `ANYCAST_ZONE_OVERSEAS` (`ANYCAST_ZONE_GLOBAL`: publish in global，need add white list to enable global acceleration，`ANYCAST_ZONE_OVERSEAS`: publish in overseas)|
+| `config.aia.addressType`           | Type of the public Ip address, one of `AnycastEIP`, `HighQualityEIP`, `EIP`   | `AnycastEIP`|
 | `config.node.labels`               | Label of node which needs to be bound aia     | `tke.cloud.tencent.com/need-aia-ip: 'true'`|
 | `controller.replicaCount`          | Controller replica count                       | `2`                               |
 | `controller.maxConcurrentReconcile` |the maximum number of concurrent Reconciles     | ``                               |
