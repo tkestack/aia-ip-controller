@@ -23,7 +23,7 @@ In general, Aia-ip-controller is a typical kubernetes controller hosted on clust
 
 ### Installation
 
-Using helm chart to install aia-ip-controller is recommended, please refer to [tkestack/charts/aia-ip-controller](https://github.com/tkestack/charts/tree/main/incubator/aia-ip-controller) and choose an appropriate version.
+Using helm chart to install aia-ip-controller is recommended, please refer to [charts/aia-ip-controller](./charts/aia-ip-controller/release-v0.12.0/README.md) and choose an appropriate version.
 
 ### Ease of Use
 
