@@ -44,6 +44,10 @@ func (o *ServingOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&o.EnableReverseReconcile, "enable-reverse-reconcile", o.EnableReverseReconcile, "Enable reverse reconcile or not, default is false, means disable reverse reconcile")
 }
 
+const (
+	ClsPrefix = "cls-"
+)
+
 // Validate checks validation of ServingOptions.
 func (o *ServingOptions) Validate() []error {
 	if o == nil {
@@ -51,8 +55,8 @@ func (o *ServingOptions) Validate() []error {
 	}
 
 	var errs []error
-	if !strings.HasPrefix(o.ClusterId, "cls-") {
-		errs = append(errs, fmt.Errorf("invalid clusterId %s, no (cls-) prefix", o.ClusterId))
+	if !strings.HasPrefix(o.ClusterId, ClsPrefix) {
+		errs = append(errs, fmt.Errorf("invalid clusterId %s, no (%s) prefix", o.ClusterId, ClsPrefix))
 	}
 	return errs
 }

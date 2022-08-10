@@ -49,8 +49,12 @@ type YamlValueConfig struct {
 	Node       NodeConfig               `yaml:"node"`
 }
 
+const (
+	ClsPrefix = "cls-"
+)
+
 func (y *YamlValueConfig) Validate() error {
-	if !strings.HasPrefix(y.Credential.ClusterID, "cls-") {
+	if !strings.HasPrefix(y.Credential.ClusterID, ClsPrefix) {
 		return fmt.Errorf("invalid cluster id %s", y.Credential.ClusterID)
 	}
 	if y.Credential.SecretID == "" || y.Credential.SecretKey == "" {

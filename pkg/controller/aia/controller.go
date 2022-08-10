@@ -23,7 +23,7 @@ import (
 	"tkestack.io/aia-ip-controller/pkg/constants"
 )
 
-// reconcile reconciles to operate on the relationship between nodes and anycast ip
+// reconcile struct reconciles to operate on the relationship between nodes and anycast ip
 type reconciler struct {
 	k8sClient               client.Client
 	eventRecorder           record.EventRecorder
@@ -91,7 +91,7 @@ func NewReconcile(k8sClient client.Client, eventRecorder record.EventRecorder, c
 }
 
 func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	// set up a convenient log object so we don't have to type request over and over again
+	// set up a convenient log object so that we don't have to type request over and over again
 	log := log.FromContext(ctx)
 
 	r.isLeader = true // let reverse reconcile loop know this
