@@ -16,7 +16,7 @@ In general, Aia-ip-controller is a typical kubernetes controller hosted on clust
 
 ## Prerequisite
 
-- Your Tencent Clound account has open [Aia Service](https://intl.cloud.tencent.com/product/aia)
+- Your Tencent Cloud account has open [Aia Service](https://intl.cloud.tencent.com/product/aia)
 - The nodes that need to bind aia should have no public ip initially
 
 ## Getting Started
